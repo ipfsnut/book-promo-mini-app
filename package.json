@@ -4,29 +4,29 @@
     "description": "Farcaster Frame for INEVITABLE: Distributed Cognition & Network Superintelligence",
     "main": "index.js",
     "scripts": {
-        "dev": "netlify dev",
-        "build": "mkdir -p public/.well-known && netlify build",
-        "setup": "bash setup.sh",
-        "start": "netlify dev"
+      "dev": "netlify dev",
+      "build": "mkdir -p public/.well-known && netlify build",
+      "setup": "bash setup.sh",
+      "start": "netlify dev"
     },
     "keywords": [
-        "farcaster",
-        "frame",
-        "book",
-        "nft",
-        "alexandria",
-        "inevitable"
+      "farcaster",
+      "frame",
+      "book",
+      "nft",
+      "alexandria",
+      "inevitable"
     ],
-    "author": "",
+    "author": "IPFSNut",
     "license": "MIT",
     "dependencies": {
-        "@farcaster/core": "^0.11.1",
-        "@netlify/functions": "^2.8.2",
-        "axios": "^1.8.4",
-        "node-cache": "^5.1.2"
+      "axios": "^1.6.2",
+      "node-cache": "^5.1.2"
     },
     "devDependencies": {
-        "husky": "^9.1.7",
-        "netlify-cli": "^17.8.1"
+      "netlify-cli": "^17.8.1"
+    },
+    "engines": {
+      "node": ">=18.0.0"
     }
-}
+  }

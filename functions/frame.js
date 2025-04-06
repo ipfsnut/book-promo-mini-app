@@ -1,4 +1,4 @@
-const { Handler } = require('@netlify/functions');
+// Import dependencies correctly
 const { createFrameResponse, createRedirectResponse } = require('./utils/frameResponse');
 const { fetchBookMetadata, getBookCollectionInfo } = require('./utils/bookMetadata');
 const { fetchNSITokenData } = require('./utils/tokenPrice');
@@ -211,7 +211,7 @@ async function handleTokenPrice() {
         }
       },
       {
-        title: `${formattedPrice} ${priceDirection} ${Math.abs(priceChange)}%`,
+        title: `$${formattedPrice} ${priceDirection} ${Math.abs(priceChange)}%`,
         action: {
           type: 'link',
           action: '/?state=token-price' // Refresh price data
@@ -264,4 +264,6 @@ async function handleTokenPrice() {
 }
 
 // Export the handler function
-exports.handler = Handler(handleFrame);
+exports.handler = async (event) => {
+  return await handleFrame(event);
+};

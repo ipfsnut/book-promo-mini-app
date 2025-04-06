@@ -1,10 +1,18 @@
-const { Handler } = require('@netlify/functions');
+// Fix imports
 const { fetchNSITokenData } = require('./utils/tokenPrice');
 const { sendTokenPriceNotification } = require('./utils/notificationSender');
 
-// Simulated database for storing user notification preferences
-// In a real app, you would use a real database
+// Fix circular dependency - use separate notification subscribers
 let notificationSubscribers = [];
+
+try {
+  // Try to import subscribers from frame-webhooks if available
+  const webhooks = require('./frame-webhooks');
+  notificationSubscribers = webhooks.notificationSubscribers || [];
+} catch (error) {
+  console.log('Could not import subscribers from frame-webhooks, using empty array');
+  notificationSubscribers = [];
+}
 
 /**
  * Scheduled function to check token prices and send notifications
@@ -13,7 +21,7 @@ let notificationSubscribers = [];
  * Netlify handles this via: 
  * https://docs.netlify.com/functions/scheduled-functions/
  */
-exports.handler = Handler(async (event) => {
+exports.handler = async (event) => {
   // Validate that this is a scheduled event or authorized call
   if (event.httpMethod !== 'POST' && !event.isScheduledEvent) {
     return {
@@ -68,7 +76,7 @@ exports.handler = Handler(async (event) => {
       })
     };
   }
-});
+};
 
 /**
  * Check if token price movements meet notification thresholds
