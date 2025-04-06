@@ -15,20 +15,58 @@ const LINKS = {
  * Main frame handler function
  */
 async function handleFrame(event) {
-  console.log('Handling frame request');
+  console.log('Handling frame request', event.httpMethod);
   
-  // Parse URL parameters and post data
-  const params = event.queryStringParameters || {};
-  const frameState = params.state || 'initial';
-  const action = params.action || '';
-
-  // Handle special actions
-  if (action === 'launch_app') {
-    // Redirect to the mini-app with context
-    return createRedirectResponse('/app?from=mini-app');
+  // Check if we're handling a GET or POST request
+  if (event.httpMethod === 'POST') {
+    // Parse the POST body for frame data
+    let payload;
+    try {
+      payload = JSON.parse(event.body || '{}');
+      console.log('Frame payload:', payload);
+    } catch (error) {
+      console.error('Error parsing payload:', error);
+      payload = {};
+    }
+    
+    // Get the button index that was pressed (1-based)
+    const buttonIndex = payload.untrustedData?.buttonIndex || 0;
+    
+    // Determine the state based on the button index
+    // This needs to match the order of buttons in your initial frame
+    const states = ['book-details', 'token-price', 'launch_app', 'nounspace-redirect'];
+    const frameState = buttonIndex > 0 && buttonIndex <= states.length 
+      ? states[buttonIndex - 1] 
+      : 'initial';
+    
+    // If we have a launch_app state, handle it as a special action
+    if (frameState === 'launch_app') {
+      return createRedirectResponse('/app?from=mini-app');
+    }
+    
+    // Handle the state as normal
+    return handleFrameState(frameState);
+  } else {
+    // For GET requests, use query parameters
+    const params = event.queryStringParameters || {};
+    const frameState = params.state || 'initial';
+    const action = params.action || '';
+    
+    // Handle special actions
+    if (action === 'launch_app') {
+      return createRedirectResponse('/app?from=mini-app');
+    }
+    
+    // Handle the state
+    return handleFrameState(frameState);
   }
+}
 
-  // Handle different frame states
+/**
+ * Handle a specific frame state
+ * @param {string} frameState - The state to handle
+ */
+async function handleFrameState(frameState) {
   switch (frameState) {
     case 'book-details':
       return handleBookDetails();
@@ -55,36 +93,36 @@ async function handleInitialFrame() {
     const collectionInfo = await getBookCollectionInfo();
     
     // Get the book cover image
-    const imageUrl = collectionInfo.image || 'https://placekitten.com/800/480'; // Fallback image
+    const imageUrl = collectionInfo.image || 'https://epicdylan.com/inevitable-cover.jpg'; // Fallback image
     
     // Create buttons for the initial frame
     const buttons = [
       {
         title: '📚 Book Details',
         action: {
-          type: 'link', 
-          action: '/?state=book-details'
+          type: 'post',
+          // No url needed for POST to this endpoint
         }
       },
       {
         title: '💰 $NSI Price',
         action: {
-          type: 'link',
-          action: '/?state=token-price'
+          type: 'post',
+          // No url needed for POST to this endpoint
         }
       },
       {
         title: '🌟 Open Mini-App',
         action: {
-          type: 'link',
-          action: '/?action=launch_app'
+          type: 'post',
+          // No url needed for POST to this endpoint
         }
       },
       {
         title: '🗣️ Community',
         action: {
-          type: 'link',
-          action: '/?state=nounspace-redirect'
+          type: 'post',
+          // No url needed for POST to this endpoint
         }
       }
     ];
@@ -98,13 +136,13 @@ async function handleInitialFrame() {
     
     // Fallback response
     return createFrameResponse({
-      imageUrl: 'https://placekitten.com/800/480',
+      imageUrl: 'https://epicdylan.com/inevitable-cover.jpg',
       buttons: [
         {
           title: 'Read INEVITABLE',
           action: {
-            type: 'link',
-            action: LINKS.PERSONAL_SITE
+            type: 'post_redirect',
+            url: LINKS.PERSONAL_SITE
           }
         }
       ]
@@ -128,29 +166,29 @@ async function handleBookDetails() {
       {
         title: '← Back',
         action: {
-          type: 'link',
-          action: '/?state=initial'
+          type: 'post',
+          // This will trigger a new POST to our endpoint
         }
       },
       {
         title: '📖 Read Now',
         action: {
-          type: 'link',
-          action: '/?state=alexandria-redirect'
+          type: 'post_redirect',
+          url: LINKS.ALEXANDRIA
         }
       },
       {
         title: '🌐 Website',
         action: {
-          type: 'link',
-          action: '/?state=personal-site-redirect'
+          type: 'post_redirect',
+          url: LINKS.PERSONAL_SITE
         }
       },
       {
         title: '💬 Community',
         action: {
-          type: 'link',
-          action: '/?state=nounspace-redirect'
+          type: 'post_redirect',
+          url: LINKS.NOUNSPACE
         }
       }
     ];
@@ -164,20 +202,19 @@ async function handleBookDetails() {
     
     // Fallback response
     return createFrameResponse({
-      imageUrl: 'https://placekitten.com/800/480',
+      imageUrl: 'https://epicdylan.com/inevitable-cover.jpg',
       buttons: [
         {
           title: '← Back',
           action: {
-            type: 'link',
-            action: '/?state=initial'
+            type: 'post',
           }
         },
         {
           title: 'Read INEVITABLE',
           action: {
-            type: 'link',
-            action: LINKS.PERSONAL_SITE
+            type: 'post_redirect',
+            url: LINKS.PERSONAL_SITE
           }
         }
       ]
@@ -206,29 +243,27 @@ async function handleTokenPrice() {
       {
         title: '← Back',
         action: {
-          type: 'link',
-          action: '/?state=initial'
+          type: 'post',
         }
       },
       {
         title: `$${formattedPrice} ${priceDirection} ${Math.abs(priceChange)}%`,
         action: {
-          type: 'link',
-          action: '/?state=token-price' // Refresh price data
+          type: 'post',
         }
       },
       {
         title: '💸 Buy $NSI',
         action: {
-          type: 'link',
-          action: 'https://app.baseswap.fi/swap'
+          type: 'post_redirect',
+          url: 'https://app.baseswap.fi/swap'
         }
       },
       {
         title: '💬 Community',
         action: {
-          type: 'link',
-          action: '/?state=nounspace-redirect'
+          type: 'post_redirect',
+          url: LINKS.NOUNSPACE
         }
       }
     ];
@@ -242,20 +277,19 @@ async function handleTokenPrice() {
     
     // Fallback response
     return createFrameResponse({
-      imageUrl: 'https://placekitten.com/800/480',
+      imageUrl: 'https://epicdylan.com/inevitable-cover.jpg',
       buttons: [
         {
           title: '← Back',
           action: {
-            type: 'link',
-            action: '/?state=initial'
+            type: 'post',
           }
         },
         {
           title: 'Join Community',
           action: {
-            type: 'link',
-            action: LINKS.NOUNSPACE
+            type: 'post_redirect',
+            url: LINKS.NOUNSPACE
           }
         }
       ]
