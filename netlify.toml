@@ -25,7 +25,9 @@
 [functions]
   node_bundler = "esbuild"
   external_node_modules = ["axios", "node-cache"]
-  node_version = "18.x"
+
+[build.environment]
+  NODE_VERSION = "18"
 
 # Ensure .well-known directory is published
 [build.processing]
