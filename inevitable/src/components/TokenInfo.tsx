@@ -30,24 +30,6 @@ const bookContractAbi = [
   }
 ] as const;
 
-// Token ABI for totalSupply and decimals
-const tokenAbi = [
-  {
-    "inputs": [],
-    "name": "totalSupply",
-    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "decimals",
-    "outputs": [{"internalType": "uint8", "name": "", "type": "uint8"}],
-    "stateMutability": "view",
-    "type": "function"
-  }
-] as const;
-
 export function TokenInfo() {
   const { isConnected } = useAccount();
   const chainId = useChainId();
@@ -67,7 +49,7 @@ export function TokenInfo() {
   });
 
   // Get collection parameters from the NFT contract
-  const { data: collectionParams, isLoading: paramsLoading } = useReadContract({
+  const { data: collectionParams } = useReadContract({
     address: bookConfig.nftInfo?.contractAddress as `0x${string}`,
     abi: bookContractAbi,
     functionName: "collectionParameters",
