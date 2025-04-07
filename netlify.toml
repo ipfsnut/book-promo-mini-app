@@ -1,0 +1,4 @@
+[build]
+  base = "inevitable/"
+  publish = "public/"
+  command = "npm run build"

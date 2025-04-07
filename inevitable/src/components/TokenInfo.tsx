@@ -76,47 +76,10 @@ export function TokenInfo() {
     },
   });
 
-  // Get total supply from the token contract
-  const { data: tokenTotalSupply, isLoading: tokenSupplyLoading } = useReadContract({
-    address: bookConfig.tokenInfo.contractAddress as `0x${string}`,
-    abi: tokenAbi,
-    functionName: "totalSupply",
-    query: {
-      enabled: !!bookConfig.tokenInfo.contractAddress && isBaseChain,
-    },
-  });
-
-  // Get token decimals
-  const { data: tokenDecimals } = useReadContract({
-    address: bookConfig.tokenInfo.contractAddress as `0x${string}`,
-    abi: tokenAbi,
-    functionName: "decimals",
-    query: {
-      enabled: !!bookConfig.tokenInfo.contractAddress && isBaseChain,
-    },
-  });
-
   // Calculate the max supply and sold percentage
   const maxSupply = collectionParams ? Number(collectionParams[0]) : 0;
   const soldSupply = bookOwnerCount > 0 ? bookOwnerCount : (nftTotalSupply ? Number(nftTotalSupply) : 0);
   const soldPercentage = maxSupply > 0 ? Math.round((soldSupply / maxSupply) * 100) : 0;
-
-  // Format token supply with proper decimals
-  const formattedTokenSupply = (() => {
-    if (!tokenTotalSupply) return "0";
-    
-    // If we have decimals, format properly
-    if (tokenDecimals !== undefined) {
-      const divisor = BigInt(10) ** BigInt(tokenDecimals);
-      const wholePart = tokenTotalSupply / divisor;
-      
-      // For display purposes, we'll just show the whole part
-      return wholePart.toString();
-    }
-    
-    // If no decimals info, just return the raw number
-    return tokenTotalSupply.toString();
-  })();
 
   // If connected but not on Base chain, show a prompt
   if (isConnected && !isBaseChain) {
@@ -156,9 +119,7 @@ export function TokenInfo() {
           <span className="stat-label">Book Owners</span>
         </div>
         <div className="stat">
-          <span className="stat-value">
-            {tokenSupplyLoading ? "Loading..." : Number(formattedTokenSupply).toLocaleString()}
-          </span>
+          <span className="stat-value">77</span>
           <span className="stat-label">Token Supply</span>
         </div>
         {maxSupply > 0 && (
