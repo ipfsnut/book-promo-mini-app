@@ -1,26 +1,17 @@
 {
-  "version": "vNext",
-  "image": {
-    "url": "https://oiwymzxncdvipdvgbycw.supabase.co/storage/v1/object/public/public/collections/cover_art_originals/InevitableCover.png",
-    "aspect_ratio": "1:1.5"
+  "accountAssociation": {
+    "header": "eyJmaWQiOjg1NzMsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHg1Mjk0MjMzMTViMTVkYTk2OTFhYmM1YjdjMWNiMGQwNDUwOWIyMmIwIn0",
+    "payload": "eyJkb21haW4iOiJnZXRpbmV2aXRhYmxlLmNvbSJ9",
+    "signature": ""
   },
-  "buttons": [
-    {
-      "label": "Explore INEVITABLE",
-      "action": "post_redirect"
-    }
-  ],
-  "frames": {
-    "version": "vNext",
-    "image": {
-      "url": "https://oiwymzxncdvipdvgbycw.supabase.co/storage/v1/object/public/public/collections/cover_art_originals/InevitableCover.png",
-      "aspect_ratio": "1:1.5"
-    },
-    "buttons": [
-      {
-        "label": "Explore INEVITABLE",
-        "action": "post_redirect"
-      }
-    ]
+  "frame": {
+    "name": "INEVITABLE",
+    "version": "1",
+    "iconUrl": "https://oiwymzxncdvipdvgbycw.supabase.co/storage/v1/object/public/public/collections/cover_art_originals/InevitableCover.png",
+    "homeUrl": "https://getinevitable.com/app",
+    "imageUrl": "https://oiwymzxncdvipdvgbycw.supabase.co/storage/v1/object/public/public/collections/cover_art_originals/InevitableCover.png",
+    "buttonTitle": "INEVITABLE",
+    "splashImageUrl": "https://oiwymzxncdvipdvgbycw.supabase.co/storage/v1/object/public/public/collections/cover_art_originals/InevitableCover.png",
+    "splashBackgroundColor": "#000000"
   }
 }
