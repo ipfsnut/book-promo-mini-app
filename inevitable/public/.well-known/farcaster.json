@@ -1,16 +1,25 @@
 {
-  "name": "INEVITABLE Book App",
-  "description": "Explore INEVITABLE by T. Dylan Daniel - read onchain, join the book club, and more",
-  "image": "https://oiwymzxncdvipdvgbycw.supabase.co/storage/v1/object/public/public/collections/cover_art_originals/InevitableCover.png",
-  "external_link": "https://epicdylan.com/getinevitable",
-  "warpcast_url": "https://warpcast.com/~/channel/inevitable",
+  "version": "vNext",
+  "image": {
+    "url": "https://oiwymzxncdvipdvgbycw.supabase.co/storage/v1/object/public/public/collections/cover_art_originals/InevitableCover.png",
+    "aspect_ratio": "1:1.5"
+  },
+  "buttons": [
+    {
+      "label": "Explore INEVITABLE",
+      "action": "post_redirect"
+    }
+  ],
   "frames": {
-    "version": "1",
-    "image": "https://oiwymzxncdvipdvgbycw.supabase.co/storage/v1/object/public/public/collections/cover_art_originals/InevitableCover.png",
+    "version": "vNext",
+    "image": {
+      "url": "https://oiwymzxncdvipdvgbycw.supabase.co/storage/v1/object/public/public/collections/cover_art_originals/InevitableCover.png",
+      "aspect_ratio": "1:1.5"
+    },
     "buttons": [
       {
-        "label": "Explore the Book",
-        "action": "post"
+        "label": "Explore INEVITABLE",
+        "action": "post_redirect"
       }
     ]
   }

@@ -13,5 +13,10 @@ export const bookConfig = {
   tokenInfo: {
     symbol: "$NSI",
     contractAddress: "0x1696688A7828E227E64953C371aC0B57d5974B55"
+  },
+  nftInfo: {
+    contractAddress: "0x64E2C384738b9Ca2C1820a00B3C2067B8213640e",
+    symbol: "INEVITABLE",
+    chain: "base"
   }
 };

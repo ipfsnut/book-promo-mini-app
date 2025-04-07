@@ -1,22 +1,135 @@
-import { useEffect, useState } from "react";
 import { bookConfig } from "../config";
-import { fetchBookStats } from "../api/bookApi";
-import { useAccount } from "wagmi";
+import { useAccount, useReadContract, useChainId } from "wagmi";
 import { useTokenHolder } from "../hooks/useTokenHolder";
+import { useBookOwnership } from "../hooks/useBookOwnership";
+import { base } from "wagmi/chains";
+
+// Full implementation contract ABI
+const bookContractAbi = [
+  // totalSupply function
+  {
+    "inputs": [],
+    "name": "totalSupply",
+    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  // collectionParameters function
+  {
+    "inputs": [],
+    "name": "collectionParameters",
+    "outputs": [
+      {"internalType": "uint256", "name": "maxSupply", "type": "uint256"},
+      {"internalType": "uint256", "name": "availableToMintDate", "type": "uint256"},
+      {"internalType": "uint256", "name": "price", "type": "uint256"},
+      {"internalType": "uint256", "name": "walletLimit", "type": "uint256"},
+      {"internalType": "uint96", "name": "secondaryRoyaltyPercentage", "type": "uint96"}
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+] as const;
+
+// Token ABI for totalSupply and decimals
+const tokenAbi = [
+  {
+    "inputs": [],
+    "name": "totalSupply",
+    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "decimals",
+    "outputs": [{"internalType": "uint8", "name": "", "type": "uint8"}],
+    "stateMutability": "view",
+    "type": "function"
+  }
+] as const;
 
 export function TokenInfo() {
   const { isConnected } = useAccount();
-  const { isHolder, balance, loading, tokenMetadata } = useTokenHolder();
-  const [stats, setStats] = useState({ readers: 0, tokenHolders: 0, totalSupply: 0 });
+  const chainId = useChainId();
+  const isBaseChain = chainId === base.id;
   
-  useEffect(() => {
-    const getStats = async () => {
-      const bookStats = await fetchBookStats();
-      setStats(bookStats);
-    };
+  const { isHolder, balance, loading: tokenLoading, tokenMetadata } = useTokenHolder();
+  const { isOwner, loading: nftLoading, totalSupply: bookOwnerCount } = useBookOwnership();
+  
+  // Get total supply from the NFT contract - only if we don't have it from useBookOwnership
+  const { data: nftTotalSupply, isLoading: nftSupplyLoading } = useReadContract({
+    address: bookConfig.nftInfo?.contractAddress as `0x${string}`,
+    abi: bookContractAbi,
+    functionName: "totalSupply",
+    query: {
+      enabled: !!bookConfig.nftInfo?.contractAddress && bookOwnerCount === 0 && isBaseChain,
+    },
+  });
+
+  // Get collection parameters from the NFT contract
+  const { data: collectionParams, isLoading: paramsLoading } = useReadContract({
+    address: bookConfig.nftInfo?.contractAddress as `0x${string}`,
+    abi: bookContractAbi,
+    functionName: "collectionParameters",
+    query: {
+      enabled: !!bookConfig.nftInfo?.contractAddress && isBaseChain,
+    },
+  });
+
+  // Get total supply from the token contract
+  const { data: tokenTotalSupply, isLoading: tokenSupplyLoading } = useReadContract({
+    address: bookConfig.tokenInfo.contractAddress as `0x${string}`,
+    abi: tokenAbi,
+    functionName: "totalSupply",
+    query: {
+      enabled: !!bookConfig.tokenInfo.contractAddress && isBaseChain,
+    },
+  });
+
+  // Get token decimals
+  const { data: tokenDecimals } = useReadContract({
+    address: bookConfig.tokenInfo.contractAddress as `0x${string}`,
+    abi: tokenAbi,
+    functionName: "decimals",
+    query: {
+      enabled: !!bookConfig.tokenInfo.contractAddress && isBaseChain,
+    },
+  });
+
+  // Calculate the max supply and sold percentage
+  const maxSupply = collectionParams ? Number(collectionParams[0]) : 0;
+  const soldSupply = bookOwnerCount > 0 ? bookOwnerCount : (nftTotalSupply ? Number(nftTotalSupply) : 0);
+  const soldPercentage = maxSupply > 0 ? Math.round((soldSupply / maxSupply) * 100) : 0;
+
+  // Format token supply with proper decimals
+  const formattedTokenSupply = (() => {
+    if (!tokenTotalSupply) return "0";
     
-    getStats();
-  }, []);
+    // If we have decimals, format properly
+    if (tokenDecimals !== undefined) {
+      const divisor = BigInt(10) ** BigInt(tokenDecimals);
+      const wholePart = tokenTotalSupply / divisor;
+      
+      // For display purposes, we'll just show the whole part
+      return wholePart.toString();
+    }
+    
+    // If no decimals info, just return the raw number
+    return tokenTotalSupply.toString();
+  })();
+
+  // If connected but not on Base chain, show a prompt
+  if (isConnected && !isBaseChain) {
+    return (
+      <div className="token-info">
+        <h3>Wrong Network</h3>
+        <div className="network-warning">
+          <p>Please connect to Base network in your wallet to view book information.</p>
+          <p>The INEVITABLE book and token contracts are deployed on Base.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="token-info">
@@ -37,51 +150,70 @@ export function TokenInfo() {
       
       <div className="token-stats">
         <div className="stat">
-          <span className="stat-value">{stats.readers}</span>
-          <span className="stat-label">Readers</span>
+          <span className="stat-value">
+            {nftSupplyLoading ? "Loading..." : soldSupply.toLocaleString()}
+          </span>
+          <span className="stat-label">Book Owners</span>
         </div>
         <div className="stat">
-          <span className="stat-value">{stats.tokenHolders}</span>
-          <span className="stat-label">Club Members</span>
+          <span className="stat-value">
+            {tokenSupplyLoading ? "Loading..." : Number(formattedTokenSupply).toLocaleString()}
+          </span>
+          <span className="stat-label">Token Supply</span>
         </div>
-        <div className="stat">
-          <span className="stat-value">{bookConfig.tokenInfo.symbol}</span>
-          <span className="stat-label">Token</span>
-        </div>
+        {maxSupply > 0 && (
+          <div className="stat">
+            <span className="stat-value">{soldPercentage}%</span>
+            <span className="stat-label">Sold</span>
+          </div>
+        )}
       </div>
       
       <div className="token-actions">
         <a href={bookConfig.links.nounspace} target="_blank" rel="noopener noreferrer" className="button primary">
           Join Book Club
         </a>
-        <a href={bookConfig.links.basescan} target="_blank" rel="noopener noreferrer" className="button secondary">
-          Verify Onchain
+        <a href={bookConfig.links.alexandriaBooks} target="_blank" rel="noopener noreferrer" className="button secondary">
+          Read on Alexandria
         </a>
       </div>
       
       {isConnected ? (
         <div className="member-check">
-          {loading ? (
+          {tokenLoading || nftLoading ? (
             <p>Checking membership status...</p>
-          ) : isHolder ? (
-            <div className="member-status positive">
-              <p>✅ You're a book club member!</p>
-              <p>Balance: {balance} {bookConfig.tokenInfo.symbol}</p>
-              {tokenMetadata.castHash && (
-                <a 
-                  href={`https://warpcast.com/~/cast/${tokenMetadata.castHash}`} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="token-cast-link"
-                >
-                  View original cast
-                </a>
-              )}
-            </div>
           ) : (
-            <div className="member-status negative">
-              <p>You're not a book club member yet.</p>
-              <p>Join on Nounspace to access exclusive content and discussions!</p>
+            <div className={`member-status ${isHolder || isOwner ? 'positive' : 'negative'}`}>
+              {isHolder && (
+                <div className="token-status">
+                  <p>✅ You're a book club member!</p>
+                  <p>Balance: {balance} {bookConfig.tokenInfo.symbol}</p>
+                  {tokenMetadata.castHash && (
+                    <a 
+                      href={`https://warpcast.com/~/cast/${tokenMetadata.castHash}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="token-cast-link"
+                    >
+                      View original cast
+                    </a>
+                  )}
+                </div>
+              )}
+              
+              {isOwner && (
+                <div className="nft-status">
+                  <p>✅ You own the INEVITABLE book NFT!</p>
+                  <p>You have access to read the book on Alexandria Books.</p>
+                </div>
+              )}
+              
+              {!isHolder && !isOwner && (
+                <div>
+                  <p>You're not a book club member yet.</p>
+                  <p>Join on Nounspace to access exclusive content and discussions!</p>
+                </div>
+              )}
             </div>
           )}
         </div>
