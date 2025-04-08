@@ -217,5 +217,52 @@ export const forumService = {
       console.error('Error deleting comment:', error);
       throw error;
     }
+  },
+  
+  // Add this method to the forumService object
+  async updatePost(postId: string | number, updates: { [key: string]: any }) {
+    // Check if user is authenticated
+    const user = await authService.getCurrentUser();
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+    
+    try {
+      // First check if user is the author or an admin
+      const { data: post, error: fetchError } = await supabase
+        .from('posts')
+        .select('user_id')
+        .eq('id', postId)
+        .single();
+      
+      if (fetchError) throw fetchError;
+      
+      // Get user role
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+      
+      const isAdmin = roleData?.role === 'admin';
+      const isAuthor = post.user_id === user.id;
+      
+      if (!isAdmin && !isAuthor) {
+        throw new Error('Not authorized to update this post');
+      }
+      
+      // Update the post
+      const { data, error } = await supabase
+        .from('posts')
+        .update(updates)
+        .eq('id', postId)
+        .select();
+      
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error updating post:', error);
+      throw error;
+    }
   }
 };
