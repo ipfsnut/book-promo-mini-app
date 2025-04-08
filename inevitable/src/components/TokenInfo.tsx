@@ -81,9 +81,6 @@ export function TokenInfo() {
       <h3>Join the Book Club</h3>
       
       <div className="token-header">
-        {tokenMetadata.image && (
-          <img src={tokenMetadata.image} alt={`${bookConfig.tokenInfo.symbol} token`} className="token-image" />
-        )}
         <div className="token-details">
           <h4>{bookConfig.tokenInfo.symbol}</h4>
           <p>The official token for INEVITABLE book club</p>
