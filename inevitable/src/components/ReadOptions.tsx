@@ -8,6 +8,16 @@ export function ReadOptions() {
         <a href={bookConfig.links.alexandriaBooks} target="_blank" rel="noopener noreferrer" className="option-card">
           <h4>Read Onchain</h4>
           <p>Experience INEVITABLE on Alexandria Books</p>
+          
+          {/* Add Alexandria Labs logo */}
+          <div className="technology-partner">
+            <p>Powered by:</p>
+            <img 
+              src="/AlexandriaLabs.png" 
+              alt="Alexandria Labs" 
+              className="partner-logo alexandria-logo" 
+            />
+          </div>
         </a>
         <a href={bookConfig.links.website} target="_blank" rel="noopener noreferrer" className="option-card">
           <h4>Physical Copy</h4>
