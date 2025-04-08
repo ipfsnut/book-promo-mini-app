@@ -83,7 +83,7 @@ export function TokenInfo() {
       <div className="token-header">
         <div className="token-details">
           <h4>{bookConfig.tokenInfo.symbol}</h4>
-          <p>The official token for INEVITABLE book club</p>
+          <p>The official token for INEVITABLE book club is $NSI, a Clanker memecoin on Base. Hold 10k $NSI to join the book club's private chat.</p>
           {tokenMetadata.fid > 0 && (
             <p className="token-fid">Creator FID: {tokenMetadata.fid}</p>
           )}
