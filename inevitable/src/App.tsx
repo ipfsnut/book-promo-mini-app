@@ -6,6 +6,7 @@ import { ReadOptions } from "./components/ReadOptions";
 import { TokenInfo } from "./components/TokenInfo";
 import { BookAssets } from "./components/BookAssets";
 import { ConnectButton } from "./components/ConnectButton";
+import { Forum } from "./components/Forum";
 
 function App() {
   useEffect(() => {
@@ -29,6 +30,7 @@ function App() {
         
         <ReadOptions />
         <TokenInfo />
+        <Forum />
         <BookAssets />
       </main>
       
