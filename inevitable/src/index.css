@@ -293,3 +293,50 @@ body {
 .description-toggle:hover {
   color: #5a46b8;
 }
+
+/* Update the partner-logo styles with more specific controls for each logo */
+.technology-partner {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+}
+
+.technology-partner p {
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.partner-logo {
+  height: auto;
+  margin-top: 5px;
+  /* Remove max-height from the general class */
+}
+
+/* Specific styling for the wide Alexandria logo */
+.alexandria-logo {
+  max-width: 120px; /* Limit the width for the wide logo */
+  max-height: 28px; /* Keep height reasonable */
+}
+
+/* Specific styling for the square-ish Nouns logo */
+.nouns-logo {
+  max-width: 30px; /* Limit width for the square logo */
+  max-height: 30px; /* Match the height with width for square appearance */
+}
+
+/* For mobile responsiveness */
+@media (max-width: 768px) {
+  .alexandria-logo {
+    max-width: 100px;
+    max-height: 24px;
+  }
+  
+  .nouns-logo {
+    max-width: 24px;
+    max-height: 24px;
+  }
+}
