@@ -2,22 +2,22 @@ import { useState } from 'react';
 import { forumService } from '../../services/forumService';
 
 interface CreateCommentFormProps {
-  postId: string;
+  postId: string | number;
   onCommentCreated: () => void;
 }
 
 export function CreateCommentForm({ postId, onCommentCreated }: CreateCommentFormProps) {
-  const [content, setContent] = useState('');
+  const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim()) return;
     
     setIsSubmitting(true);
+    
     try {
-      await forumService.addComment(postId, content);
-      setContent('');
+      await forumService.createComment(postId, comment);
+      setComment('');
       onCommentCreated();
     } catch (error) {
       console.error('Error creating comment:', error);
@@ -30,17 +30,18 @@ export function CreateCommentForm({ postId, onCommentCreated }: CreateCommentFor
     <div className="create-comment-form">
       <form onSubmit={handleSubmit}>
         <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
           placeholder="Add a comment..."
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          required
           className="comment-input"
-          disabled={isSubmitting}
         />
+        
         <div className="form-actions">
           <button 
             type="submit" 
             className="button primary"
-            disabled={!content.trim() || isSubmitting}
+            disabled={isSubmitting || !comment.trim()}
           >
             {isSubmitting ? 'Posting...' : 'Post Comment'}
           </button>

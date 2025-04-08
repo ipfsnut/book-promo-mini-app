@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { authService } from '../../services/authService';
+import { useEffect } from 'react';
+
+
 
 interface CommentProps {
   comment: any;
@@ -9,63 +12,57 @@ interface CommentProps {
 }
 
 export function Comment({ comment, userRole, onDelete }: CommentProps) {
-  const [showModTools, setShowModTools] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [user, setUser] = useState<any>(null);
   
-  // Get current user
-  const currentUser = authService.getCurrentUser();
+  // Get current user to check if they're the author
+  useEffect(() => {
+    const getUser = async () => {
+      const currentUser = await authService.getCurrentUser();
+      setUser(currentUser);
+    };
+    getUser();
+  }, []);
   
-  // Check if user is comment creator
-  const isCreator = currentUser?.userId === comment.user_id;
+  const isAuthor = user && user.id === comment.user_id; // Changed from userId to user_id
   
   // Format timestamp
   const timestamp = new Date(comment.created_at);
   const timeAgo = formatDistanceToNow(timestamp, { addSuffix: true });
   
-  // Handle comment deletion
-  const handleDelete = async (e) => {
-    e.stopPropagation();
-    await onDelete(comment.id);
+  const handleDelete = async (e: React.MouseEvent) => { // Added type annotation
+    e.preventDefault();
+    setIsDeleting(true);
+    const success = await onDelete(comment.id);
+    if (!success) setIsDeleting(false);
   };
   
-  // Determine if user can delete this comment
-  const canDelete = 
-    isCreator || 
-    userRole === 'admin' || 
-    userRole === 'moderator';
-  
   return (
-    <div 
-      className="forum-comment"
-      onMouseEnter={() => setShowModTools(true)}
-      onMouseLeave={() => setShowModTools(false)}
-    >
+    <div className="comment">
       <div className="comment-header">
         <div className="comment-author">
           <span className="author-name">
             {comment.users.username || `${comment.users.wallet_address.substring(0, 6)}...`}
           </span>
         </div>
-        
-        <div className="comment-meta">
-          <span className="comment-time">{timeAgo}</span>
-          
-          {showModTools && canDelete && (
-            <div className="mod-tools">
-              <button 
-                className="mod-tool-btn delete"
-                onClick={handleDelete}
-                title="Delete"
-              >
-                🗑️
-              </button>
-            </div>
-          )}
-        </div>
+        <span className="comment-time">{timeAgo}</span>
       </div>
       
       <div className="comment-content">
         <p>{comment.content}</p>
       </div>
+      
+      {(isAuthor || userRole === 'admin') && (
+        <div className="comment-actions">
+          <button 
+            onClick={handleDelete} 
+            className="delete-button"
+            disabled={isDeleting}
+          >
+            {isDeleting ? 'Deleting...' : 'Delete'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

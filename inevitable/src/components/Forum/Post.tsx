@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { authService } from '../../services/authService';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -12,25 +12,33 @@ interface PostProps {
 
 export function Post({ post, userRole, onSelect, onDelete, onTogglePin }: PostProps) {
   const [showModTools, setShowModTools] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   
-  // Get current user
-  const currentUser = authService.getCurrentUser();
+  // Get current user using useEffect to handle the Promise
+  useEffect(() => {
+    const fetchUser = async () => {
+      const user = await authService.getCurrentUser();
+      setCurrentUser(user);
+    };
+    
+    fetchUser();
+  }, []);
   
   // Check if user is post creator
-  const isCreator = currentUser?.userId === post.user_id;
+  const isCreator = currentUser?.id === post.user_id;
   
   // Format timestamp
   const timestamp = new Date(post.created_at);
   const timeAgo = formatDistanceToNow(timestamp, { addSuffix: true });
   
   // Handle post deletion
-  const handleDelete = async (e) => {
+  const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent post selection
     await onDelete(post.id);
   };
   
   // Handle post pinning
-  const handleTogglePin = async (e) => {
+  const handleTogglePin = async (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent post selection
     await onTogglePin(post.id, post.is_pinned);
   };
