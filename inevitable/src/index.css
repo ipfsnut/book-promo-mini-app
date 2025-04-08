@@ -364,19 +364,19 @@ body {
 
 /* Specific styling for the square-ish Nouns logo */
 .nouns-logo {
-  max-width: 30px; /* Limit width for the square logo */
-  max-height: 30px; /* Match the height with width for square appearance */
+  max-width: 50px; /* Limit width for the square logo */
+  max-height: 50px; /* Match the height with width for square appearance */
 }
 
 /* For mobile responsiveness */
 @media (max-width: 768px) {
   .alexandria-logo {
     max-width: 100px;
-    max-height: 24px;
+    max-height: 40px;
   }
   
   .nouns-logo {
-    max-width: 24px;
-    max-height: 24px;
+    max-width: 40px;
+    max-height: 40px;
   }
 }
