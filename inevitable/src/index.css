@@ -113,15 +113,19 @@ body {
 .option-card {
   background-color: rgba(255, 255, 255, 0.05);
   border-radius: var(--border-radius);
-  padding: var(--spacing-md);
+  padding: var(--spacing-lg);
   text-decoration: none;
   color: var(--text-color);
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
+  border: 1px solid transparent;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .option-card:hover {
   background-color: rgba(255, 255, 255, 0.1);
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(110, 86, 207, 0.3);
 }
 
 .token-stats {
@@ -150,58 +154,84 @@ body {
   display: flex;
   gap: var(--spacing-md);
   margin: var(--spacing-lg) 0;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 .button {
-  padding: var(--spacing-sm) var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-lg);
   border-radius: var(--border-radius);
-  font-weight: 500;
+  font-weight: 600;
   text-decoration: none;
   text-align: center;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
+  display: inline-block;
+  min-width: 140px;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .primary {
   background-color: var(--primary-color);
   color: white;
+  border: none;
 }
 
 .primary:hover {
   background-color: #5a46b8;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .secondary {
   background-color: transparent;
-  border: 1px solid var(--primary-color);
+  border: 2px solid var(--primary-color);
   color: var(--primary-color);
 }
 
 .secondary:hover {
   background-color: rgba(110, 86, 207, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .connect-button, .disconnect-button {
-  padding: var(--spacing-sm) var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-lg);
   border-radius: var(--border-radius);
   border: none;
-  background-color: var(--primary-color);
-  color: white;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.connect-button:hover, .disconnect-button:hover {
+.connect-button {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.connect-button:hover {
   background-color: #5a46b8;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .disconnect-button {
   background-color: #e11d48;
+  color: white;
 }
 
 .disconnect-button:hover {
   background-color: #be123c;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.button:focus, .connect-button:focus, .disconnect-button:focus, .option-card:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
 }
 
 .connect-info {
@@ -246,11 +276,13 @@ body {
   }
   
   .option-card {
-    background-color: rgba(0, 0, 0, 0.05);
+    background-color: rgba(0, 0, 0, 0.03);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
   }
   
   .option-card:hover {
-    background-color: rgba(0, 0, 0, 0.1);
+    background-color: rgba(0, 0, 0, 0.05);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.07);
   }
   
   .stat-label {
@@ -267,6 +299,14 @@ body {
   
   .member-check {
     background-color: rgba(0, 0, 0, 0.05);
+  }
+  
+  .button, .connect-button, .disconnect-button {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.07);
+  }
+  
+  .button:hover, .connect-button:hover, .disconnect-button:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   }
 }
 

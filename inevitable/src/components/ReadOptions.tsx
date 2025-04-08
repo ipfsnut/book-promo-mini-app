@@ -11,7 +11,6 @@ export function ReadOptions() {
           
           {/* Add Alexandria Labs logo */}
           <div className="technology-partner">
-            <p>Powered by:</p>
             <img 
               src="/AlexandriaLabs.png" 
               alt="Alexandria Labs" 
