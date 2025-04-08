@@ -83,10 +83,22 @@ export function TokenInfo() {
       <div className="token-header">
         <div className="token-details">
           <h4>{bookConfig.tokenInfo.symbol}</h4>
-          <p>The official token for INEVITABLE book club is $NSI, a Clanker memecoin on Base. Hold 10k $NSI to join the book club's private chat.</p>
+          <p>The official token for INEVITABLE book club is $NSI, a Clanker memecoin on Base. Hold 10k $NSI to join the book club's private chat, powered by Nounspace.</p>
           {tokenMetadata.fid > 0 && (
             <p className="token-fid">Creator FID: {tokenMetadata.fid}</p>
           )}
+          
+          {/* Add Nouns logo */}
+          <div className="technology-partner">
+            <p>Book club powered by:</p>
+            <a href={bookConfig.links.nounspace} target="_blank" rel="noopener noreferrer">
+              <img 
+                src="/nouns.png" 
+                alt="Nouns" 
+                className="partner-logo nouns-logo" 
+              />
+            </a>
+          </div>
         </div>
       </div>
       

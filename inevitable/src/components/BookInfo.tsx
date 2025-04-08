@@ -40,6 +40,18 @@ Enter the vision of a future in which people have learned to proactively organiz
           </>
         )}
       </div>
+      
+      {/* Add Alexandria Labs logo */}
+      <div className="technology-partner">
+        <p>Book experience powered by:</p>
+        <a href={bookConfig.links.alexandriaBooks} target="_blank" rel="noopener noreferrer">
+          <img 
+            src="/AlexandriaLabs.png" 
+            alt="Alexandria Labs" 
+            className="partner-logo alexandria-logo" 
+          />
+        </a>
+      </div>
     </div>
   );
 }
