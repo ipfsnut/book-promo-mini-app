@@ -5,6 +5,9 @@ export function ConnectButton() {
   const { connect, connectors, isPending } = useConnect();
   const { disconnect } = useDisconnect();
 
+  // Find the injected connector (MetaMask)
+  const injectedConnector = connectors.find(c => c.id === 'injected');
+
   if (isConnected) {
     return (
       <div className="connect-info">
@@ -21,7 +24,14 @@ export function ConnectButton() {
   return (
     <button 
       className="connect-button" 
-      onClick={() => connect({ connector: connectors[0] })}
+      onClick={() => {
+        // Use the injected connector if available, otherwise use the first connector
+        if (injectedConnector) {
+          connect({ connector: injectedConnector });
+        } else {
+          connect({ connector: connectors[0] });
+        }
+      }}
       disabled={isPending}
     >
       {isPending ? "Connecting..." : "Connect Wallet"}
