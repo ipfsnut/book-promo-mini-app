@@ -12,7 +12,7 @@ interface PostDetailProps {
   onSignIn: () => Promise<boolean>;
 }
 
-export function PostDetail({ post, userRole, isAuthenticated, onBackToList, onSignIn }: PostDetailProps) {
+export function PostDetail({ post, userRole, isAuthenticated, onSignIn }: PostDetailProps) {
   const [comments, setComments] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   
