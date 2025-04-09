@@ -70,14 +70,63 @@ export const forumService = {
   },
   
   // Create a new post
-  async createPost(title: string, content: string) {
+  async createPost(title: string | null, content: string) {
     // Check if user is authenticated
     const user = await authService.getCurrentUser();
     if (!user) {
       throw new Error('User not authenticated');
     }
     
+    console.log("Starting post creation process");
+    console.log("Current user from authService:", user);
+    
     try {
+      console.log("Creating post with user_id:", user.id);
+      
+      // Get verification token from localStorage
+      const walletAddress = localStorage.getItem('walletAddress');
+      const verificationToken = localStorage.getItem('verificationToken');
+      
+      console.log("localStorage values at post creation:", {
+        walletAddress,
+        verificationToken: verificationToken ? `${verificationToken.substring(0, 10)}...` : null,
+        fullToken: verificationToken
+      });
+      
+      // Check if verification token exists in database
+      console.log("Checking verification token in database...");
+      const { data: tokens } = await supabase
+        .from('verification_tokens')
+        .select('*')
+        .eq('wallet_address', walletAddress);
+      
+      console.log("Verification tokens found:", tokens);
+      
+      // If no token in database, try to insert it
+      if (!tokens || tokens.length === 0) {
+        console.log("No verification token found in database, inserting...");
+        
+        if (verificationToken) {
+          const { error: insertError } = await supabase
+            .from('verification_tokens')
+            .insert([
+              {
+                wallet_address: walletAddress,
+                token: verificationToken,
+                created_at: new Date().toISOString()
+              }
+            ]);
+        
+          if (insertError) {
+            console.error("Error inserting verification token:", insertError);
+          } else {
+            console.log("Verification token inserted successfully");
+          }
+        }
+      }
+      
+      // Now try to create the post
+      console.log("Attempting post creation...");
       const { data, error } = await supabase
         .from('posts')
         .insert([
@@ -89,7 +138,45 @@ export const forumService = {
         ])
         .select();
       
-      if (error) throw error;
+      if (error) {
+        console.error("Post creation error details:", error);
+        
+        // If we still have an RLS policy violation, let's check what's wrong
+        if (error.code === '42501') {
+          console.log("RLS policy violation - checking database permissions...");
+          
+          // Check if user exists
+          const { data: userCheck } = await supabase
+            .from('users')
+            .select('*')
+            .eq('wallet_address', walletAddress);
+        
+          console.log("User check:", {
+            found: !!userCheck && userCheck.length > 0,
+            error: null
+          });
+          
+          // Check if token exists
+          const { data: tokenCheck } = await supabase
+            .from('verification_tokens')
+            .select('*')
+            .eq('wallet_address', walletAddress);
+        
+          console.log("Token check:", {
+            found: !!tokenCheck && tokenCheck.length > 0,
+            tokens: tokenCheck,
+            error: null
+          });
+          
+          // If we still don't have a token, we need to re-authenticate
+          if (!tokenCheck || tokenCheck.length === 0) {
+            throw new Error('Authentication token missing. Please sign in again.');
+          }
+        }
+        
+        throw error;
+      }
+      
       return data;
     } catch (error) {
       console.error('Error creating post:', error);

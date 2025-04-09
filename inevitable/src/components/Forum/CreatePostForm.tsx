@@ -24,16 +24,56 @@ export function CreatePostForm({ onPostCreated, isAuthenticated, onSignIn }: Cre
     setIsSubmitting(true);
     
     try {
+      console.log("Creating post with title:", title, "and content:", content);
       await forumService.createPost(title, content);
       setTitle('');
       setContent('');
       onPostCreated();
     } catch (error) {
       console.error('Error creating post:', error);
+      
+      // TypeScript-safe error handling
+      const errorMessage = error instanceof Error ? error.message : 
+                           typeof error === 'object' && error !== null && 'message' in error ? 
+                           String(error.message) : 'Unknown error';
+      
+      // If the error is about missing authentication token, prompt for sign-in
+      if (errorMessage.includes('Authentication token missing')) {
+        alert('Your session has expired. Please sign in again.');
+        const success = await onSignIn();
+        if (success) {
+          // Try again after successful sign-in
+          try {
+            await forumService.createPost(title, content);
+            setTitle('');
+            setContent('');
+            onPostCreated();
+          } catch (retryError) {
+            console.error('Error creating post after re-authentication:', retryError);
+          }
+        }
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
+  
+  if (!isAuthenticated) {
+    return (
+      <div className="create-post-form">
+        <h4>Start a Discussion</h4>
+        <div className="auth-prompt">
+          <p>Sign in with your wallet to participate in discussions</p>
+          <button 
+            onClick={onSignIn} 
+            className="button primary"
+          >
+            Sign In
+          </button>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="create-post-form">
@@ -62,7 +102,7 @@ export function CreatePostForm({ onPostCreated, isAuthenticated, onSignIn }: Cre
             className="button primary"
             disabled={isSubmitting || !content.trim()}
           >
-            {isSubmitting ? 'Posting...' : isAuthenticated ? 'Post' : 'Sign & Post'}
+            {isSubmitting ? 'Posting...' : 'Post'}
           </button>
         </div>
       </form>

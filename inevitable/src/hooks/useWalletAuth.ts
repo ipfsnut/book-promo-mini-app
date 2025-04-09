@@ -2,6 +2,7 @@ import { useAccount, useReadContract, useSignMessage } from 'wagmi'
 import { useState, useEffect } from 'react'
 import { bookConfig } from '../config'
 import { authService } from '../services/authService'
+import { supabase } from '../lib/supabase'
 
 // ERC721 interface for checking NFT ownership
 const erc721ABI = [
@@ -27,7 +28,7 @@ const erc20ABI = [
 
 export function useWalletAuth() {
   const { address, isConnected } = useAccount()
-  const userRole = 'member'
+  const [userRole, setUserRole] = useState('member')
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isAuthenticating, setIsAuthenticating] = useState(false)
   const { signMessageAsync } = useSignMessage()
@@ -62,29 +63,30 @@ export function useWalletAuth() {
   useEffect(() => {
     const checkAuth = async () => {
       if (isConnected && address) {
-        console.log('Wallet connected, checking authentication for:', address)
-        
         try {
-          // First check if user exists
           const user = await authService.getCurrentUser()
+          setIsAuthenticated(!!user)
           
-          if (!user) {
-            console.log('No user found for this wallet, creating new user...')
+          // If user exists, get their role
+          if (user) {
             try {
-              // This will create a new user if one doesn't exist
-              const newUser = await authService.authenticateWithWallet(address)
-              console.log('New user authenticated:', newUser)
-              setIsAuthenticated(!!newUser)
+              const { data: roleData } = await supabase
+                .from('user_roles')
+                .select('role')
+                .eq('user_id', user.id)
+                .single()
+              
+              if (roleData) {
+                setUserRole(roleData.role)
+              }
             } catch (error) {
-              console.error('Error creating new user:', error)
-              setIsAuthenticated(false)
+              console.error('Error fetching user role:', error)
+              // Default to member role if there's an error
+              setUserRole('member')
             }
-          } else {
-            console.log('User found:', user)
-            setIsAuthenticated(true)
           }
         } catch (error) {
-          console.error('Error in authentication check:', error)
+          console.error('Error checking authentication:', error)
           setIsAuthenticated(false)
         }
       } else {
@@ -96,22 +98,66 @@ export function useWalletAuth() {
   }, [isConnected, address])
 
   // Sign in function - authenticate with the backend
-  const signIn = async () => {
+  const signInWithWallet = async () => {
     if (!address || isAuthenticating) return false
     
     setIsAuthenticating(true)
+    console.log("Starting explicit sign-in with wallet:", address)
     
     try {
       // Generate message to sign
       const message = authService.generateSignMessage(address)
+      console.log("Generated message to sign:", message)
       
       // Request signature from wallet
       const signature = await signMessageAsync({ message })
+      console.log("Received signature from wallet")
       
-      // Authenticate with the wallet address, signature, and message
-      const user = await authService.authenticateWithWallet(address, signature, message)
-      setIsAuthenticated(!!user)
-      return !!user
+      // Generate verification token
+      const verificationToken = authService.generateVerificationToken(signature)
+      console.log("Generated verification token:", verificationToken.substring(0, 10) + "...")
+      
+      // Store in localStorage
+      localStorage.setItem('walletAddress', address)
+      localStorage.setItem('verificationToken', verificationToken)
+      console.log("Stored credentials in localStorage")
+      
+      // Store in database
+      console.log("Storing verification token in database...")
+      try {
+        const { error } = await supabase
+          .from('verification_tokens')
+          .upsert([
+            {
+              wallet_address: address,
+              token: verificationToken,
+              created_at: new Date().toISOString()
+            }
+          ])
+        
+        if (error) {
+          console.error("Error storing verification token:", error)
+          return false
+        }
+        
+        console.log("Verification token stored successfully")
+        
+        // Verify it was stored
+        const { data: tokens } = await supabase
+          .from('verification_tokens')
+          .select('*')
+          .eq('wallet_address', address)
+        
+        console.log("Verification tokens in database:", tokens)
+        
+        // Now authenticate the user
+        const user = await authService.authenticateWithWallet(address)
+        setIsAuthenticated(!!user)
+        return !!user
+      } catch (error) {
+        console.error("Error in token storage:", error)
+        return false
+      }
     } catch (error) {
       console.error('Authentication error:', error)
       return false
@@ -119,6 +165,8 @@ export function useWalletAuth() {
       setIsAuthenticating(false)
     }
   }
+
+  const signIn = signInWithWallet
 
   return {
     isAuthenticated,
