@@ -18,7 +18,7 @@ export const forumService = {
           comments (count)
         `)
         .order('is_pinned', { ascending: false })
-        .order('created_at', { ascending: false });
+        .order('updated_at', { ascending: false });
       
       if (error) throw error;
       return data || [];
@@ -106,7 +106,8 @@ export const forumService = {
     }
     
     try {
-      const { data, error } = await supabase
+      // Start a transaction
+      const { data: comment, error: commentError } = await supabase
         .from('comments')
         .insert([
           { 
@@ -116,9 +117,18 @@ export const forumService = {
           }
         ])
         .select();
-      
-      if (error) throw error;
-      return data;
+    
+      if (commentError) throw commentError;
+    
+      // Update the post's updated_at timestamp
+      const { error: postError } = await supabase
+        .from('posts')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', postId);
+    
+      if (postError) throw postError;
+    
+      return comment;
     } catch (error) {
       console.error('Error creating comment:', error);
       throw error;

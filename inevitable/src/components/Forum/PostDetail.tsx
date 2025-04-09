@@ -66,17 +66,7 @@ export function PostDetail({ post, userRole, isAuthenticated, onBackToList, onSi
   const timeAgo = formatDistanceToNow(timestamp, { addSuffix: true });
   
   return (
-    <div className="post-detail">
-      {/* Add a back button that uses onBackToList */}
-      <div className="back-navigation">
-        <button 
-          className="back-button" 
-          onClick={onBackToList}
-        >
-          ← Back to Discussions
-        </button>
-      </div>
-      
+    <div className="post-detail">    
       <div className="detail-post">
         <div className="post-header">
           <div className="post-author">

@@ -112,7 +112,7 @@ export function Post({ post, userRole, onSelect, onDelete, onTogglePin }: PostPr
       <div className="post-footer">
         <div className="post-stats">
           <span className="comments-count">
-            {post.comments_count || 0} comments
+            {post.comments && post.comments[0] ? post.comments[0].count : 0} comments
           </span>
         </div>
         
