@@ -7,6 +7,9 @@ import { TokenInfo } from "./components/TokenInfo";
 import { BookAssets } from "./components/BookAssets";
 import { ConnectButton } from "./components/ConnectButton";
 import { Forum } from "./components/Forum";
+import { DebugInfo } from "./components/DebugInfo";
+import { DebugHeaders } from "./components/DebugHeaders";
+
 
 function App() {
   useEffect(() => {
@@ -15,6 +18,8 @@ function App() {
 
   return (
     <div className="app-container">
+      {import.meta.env.DEV && <DebugInfo />}
+      <DebugHeaders />
       <header className="app-header">
         <h1>INEVITABLE</h1>
         <div className="connect-wrapper">
