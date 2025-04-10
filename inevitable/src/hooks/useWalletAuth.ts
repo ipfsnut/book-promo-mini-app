@@ -2,7 +2,7 @@ import { useAccount, useReadContract, useSignMessage } from 'wagmi'
 import { useState, useEffect } from 'react'
 import { bookConfig } from '../config'
 import { authService } from '../services/authService'
-import { supabase } from '../lib/supabase'
+import { createAuthenticatedClient } from '../lib/supabase'
 
 // ERC721 interface for checking NFT ownership
 const erc721ABI = [
@@ -59,6 +59,32 @@ export function useWalletAuth() {
   const hasAccess = (nftBalance && Number(nftBalance) > 0) || 
                     (tokenBalance && Number(tokenBalance) >= bookConfig.tokenInfo.minBalance)
 
+  // Update localStorage when NFT or token balances change
+  useEffect(() => {
+    const updateAccessStatus = async () => {
+      if (isConnected && address) {
+        // Make sure we're only using defined values and proper conversion
+        const hasNFTAccess = nftBalance ? Number(nftBalance) > 0 : false;
+        const hasTokenAccess = tokenBalance ? Number(tokenBalance) >= bookConfig.tokenInfo.minBalance : false;
+        
+        // Store the access status in localStorage
+        localStorage.setItem('hasNFTAccess', hasNFTAccess ? 'true' : 'false');
+        localStorage.setItem('hasTokenAccess', hasTokenAccess ? 'true' : 'false');
+        
+        // Only update in the database if the user is authenticated
+        if (isAuthenticated) {
+          try {
+            await authService.updateAssetAccessStatus(address, hasNFTAccess, hasTokenAccess);
+          } catch (error) {
+            console.error('Error updating asset access status:', error);
+          }
+        }
+      }
+    };
+    
+    updateAccessStatus();
+  }, [nftBalance, tokenBalance, isConnected, address, isAuthenticated]);
+
   // Check if user is already authenticated
   useEffect(() => {
     const checkAuth = async () => {
@@ -70,6 +96,7 @@ export function useWalletAuth() {
           // If user exists, get their role
           if (user) {
             try {
+              const supabase = createAuthenticatedClient();
               const { data: roleData } = await supabase
                 .from('user_roles')
                 .select('role')
@@ -120,11 +147,19 @@ export function useWalletAuth() {
       // Store in localStorage
       localStorage.setItem('walletAddress', address)
       localStorage.setItem('verificationToken', verificationToken)
+      
+      // Also store asset ownership status - FIX HERE
+      const hasNFTAccess = nftBalance ? Number(nftBalance) > 0 : false;
+      const hasTokenAccess = tokenBalance ? Number(tokenBalance) >= bookConfig.tokenInfo.minBalance : false;
+      localStorage.setItem('hasNFTAccess', hasNFTAccess ? 'true' : 'false');
+      localStorage.setItem('hasTokenAccess', hasTokenAccess ? 'true' : 'false');
+      
       console.log("Stored credentials in localStorage")
       
       // Store in database
       console.log("Storing verification token in database...")
       try {
+        const supabase = createAuthenticatedClient();
         const { error } = await supabase
           .from('verification_tokens')
           .upsert([
@@ -142,17 +177,17 @@ export function useWalletAuth() {
         
         console.log("Verification token stored successfully")
         
-        // Verify it was stored
-        const { data: tokens } = await supabase
-          .from('verification_tokens')
-          .select('*')
-          .eq('wallet_address', address)
-        
-        console.log("Verification tokens in database:", tokens)
-        
         // Now authenticate the user
         const user = await authService.authenticateWithWallet(address)
         setIsAuthenticated(!!user)
+        
+        // Update asset access status in the database
+        await authService.updateAssetAccessStatus(
+          address, 
+          hasNFTAccess, 
+          hasTokenAccess
+        );
+        
         return !!user
       } catch (error) {
         console.error("Error in token storage:", error)

@@ -1,10 +1,10 @@
-import { supabase } from '../lib/supabase';
 import { authService } from './authService';
 
 export const forumService = {
   // Get all posts
   async getPosts() {
     try {
+      const supabase = authService.getClient();
       const { data, error } = await supabase
         .from('posts')
         .select(`
@@ -31,6 +31,7 @@ export const forumService = {
   // Get a single post with its comments
   async getPost(postId: string | number) {
     try {
+      const supabase = authService.getClient();
       // Get the post
       const { data: post, error: postError } = await supabase
         .from('posts')
@@ -77,56 +78,25 @@ export const forumService = {
       throw new Error('User not authenticated');
     }
     
-    console.log("Starting post creation process");
-    console.log("Current user from authService:", user);
-    
     try {
-      console.log("Creating post with user_id:", user.id);
+      // Get the client
+      const supabase = authService.getClient();
       
-      // Get verification token from localStorage
+      // Check for access based on token/NFT ownership
       const walletAddress = localStorage.getItem('walletAddress');
-      const verificationToken = localStorage.getItem('verificationToken');
-      
-      console.log("localStorage values at post creation:", {
-        walletAddress,
-        verificationToken: verificationToken ? `${verificationToken.substring(0, 10)}...` : null,
-        fullToken: verificationToken
-      });
-      
-      // Check if verification token exists in database
-      console.log("Checking verification token in database...");
-      const { data: tokens } = await supabase
-        .from('verification_tokens')
-        .select('*')
-        .eq('wallet_address', walletAddress);
-      
-      console.log("Verification tokens found:", tokens);
-      
-      // If no token in database, try to insert it
-      if (!tokens || tokens.length === 0) {
-        console.log("No verification token found in database, inserting...");
-        
-        if (verificationToken) {
-          const { error: insertError } = await supabase
-            .from('verification_tokens')
-            .insert([
-              {
-                wallet_address: walletAddress,
-                token: verificationToken,
-                created_at: new Date().toISOString()
-              }
-            ]);
-        
-          if (insertError) {
-            console.error("Error inserting verification token:", insertError);
-          } else {
-            console.log("Verification token inserted successfully");
-          }
-        }
+      if (!walletAddress) {
+        throw new Error('Wallet address not found in localStorage');
       }
       
-      // Now try to create the post
-      console.log("Attempting post creation...");
+      const hasNFTAccess = localStorage.getItem('hasNFTAccess') === 'true';
+      const hasTokenAccess = localStorage.getItem('hasTokenAccess') === 'true';
+      
+      if (!hasNFTAccess && !hasTokenAccess) {
+        throw new Error('You must own the INEVITABLE book NFT or $NSI tokens to post');
+      }
+      
+      console.log(`Creating post with user_id: ${user.id} for wallet: ${walletAddress}`);
+      
       const { data, error } = await supabase
         .from('posts')
         .insert([
@@ -141,37 +111,44 @@ export const forumService = {
       if (error) {
         console.error("Post creation error details:", error);
         
-        // If we still have an RLS policy violation, let's check what's wrong
-        if (error.code === '42501') {
-          console.log("RLS policy violation - checking database permissions...");
+        // If we have an RLS policy violation, check what's wrong
+        if (error.code === '42501' || error.code === '401') {
+          console.log("RLS policy violation - checking auth details...");
           
-          // Check if user exists
-          const { data: userCheck } = await supabase
-            .from('users')
-            .select('*')
-            .eq('wallet_address', walletAddress);
-        
-          console.log("User check:", {
-            found: !!userCheck && userCheck.length > 0,
-            error: null
-          });
-          
-          // Check if token exists
-          const { data: tokenCheck } = await supabase
-            .from('verification_tokens')
-            .select('*')
-            .eq('wallet_address', walletAddress);
-        
-          console.log("Token check:", {
-            found: !!tokenCheck && tokenCheck.length > 0,
-            tokens: tokenCheck,
-            error: null
-          });
-          
-          // If we still don't have a token, we need to re-authenticate
-          if (!tokenCheck || tokenCheck.length === 0) {
+          // Check verification token
+          const verificationToken = localStorage.getItem('verificationToken');
+          if (!verificationToken) {
             throw new Error('Authentication token missing. Please sign in again.');
           }
+          
+          // Try to refresh the token and authentication
+          const refreshSuccess = await authService.refreshAuthenticationStatus();
+          if (!refreshSuccess) {
+            throw new Error('Authentication failed. Please sign in again.');
+          }
+          
+          // Try once more with fresh headers
+          const { data: retryData, error: retryError } = await supabase
+            .from('posts')
+            .insert([{ 
+              title: title || null,
+              content,
+              user_id: user.id
+            }])
+            .select();
+          
+          if (retryError) {
+            console.error("Retry error:", retryError);
+            
+            // Special handling for specific error codes
+            if (retryError.code === '23505') {
+              throw new Error('This post may have been created already. Please refresh the page.');
+            } else {
+              throw new Error('Failed to create post after authentication refresh');
+            }
+          }
+          
+          return retryData;
         }
         
         throw error;
@@ -193,7 +170,22 @@ export const forumService = {
     }
     
     try {
-      // Start a transaction
+      const supabase = authService.getClient();
+      
+      // Check for access based on token/NFT ownership
+      const walletAddress = localStorage.getItem('walletAddress');
+      if (!walletAddress) {
+        throw new Error('Wallet address not found in localStorage');
+      }
+      
+      const hasNFTAccess = localStorage.getItem('hasNFTAccess') === 'true';
+      const hasTokenAccess = localStorage.getItem('hasTokenAccess') === 'true';
+      
+      if (!hasNFTAccess && !hasTokenAccess) {
+        throw new Error('You must own the INEVITABLE book NFT or $NSI tokens to comment');
+      }
+      
+      // Create the comment
       const { data: comment, error: commentError } = await supabase
         .from('comments')
         .insert([
@@ -205,7 +197,41 @@ export const forumService = {
         ])
         .select();
     
-      if (commentError) throw commentError;
+      if (commentError) {
+        // Handle RLS policy violation
+        if (commentError.code === '42501' || commentError.code === '401') {
+          // Try to refresh the authentication
+          const refreshSuccess = await authService.refreshAuthenticationStatus();
+          if (!refreshSuccess) {
+            throw new Error('Authentication failed. Please sign in again.');
+          }
+          
+          // Try once more with fresh headers
+          const { data: retryData, error: retryError } = await supabase
+            .from('comments')
+            .insert([{ 
+              content,
+              post_id: postId,
+              user_id: user.id
+            }])
+            .select();
+          
+          if (retryError) {
+            console.error("Retry error:", retryError);
+            throw new Error('Failed to create comment after authentication refresh');
+          }
+          
+          // Update the post's updated_at timestamp
+          await supabase
+            .from('posts')
+            .update({ updated_at: new Date().toISOString() })
+            .eq('id', postId);
+            
+          return retryData;
+        }
+        
+        throw commentError;
+      }
     
       // Update the post's updated_at timestamp
       const { error: postError } = await supabase
@@ -231,6 +257,8 @@ export const forumService = {
     }
     
     try {
+      const supabase = authService.getClient();
+      
       // First check if user is the author or an admin
       const { data: post, error: fetchError } = await supabase
         .from('posts')
@@ -260,7 +288,21 @@ export const forumService = {
         .delete()
         .eq('id', postId);
       
-      if (deleteError) throw deleteError;
+      if (deleteError) {
+        // Try once more with fresh headers if we have an auth issue
+        if (deleteError.code === '42501' || deleteError.code === '401') {
+          await authService.refreshAuthenticationStatus();
+          
+          const { error: retryError } = await supabase
+            .from('posts')
+            .delete()
+            .eq('id', postId);
+            
+          if (retryError) throw retryError;
+        } else {
+          throw deleteError;
+        }
+      }
       
       return true;
     } catch (error) {
@@ -278,6 +320,8 @@ export const forumService = {
     }
     
     try {
+      const supabase = authService.getClient();
+      
       // First check if user is the author or an admin
       const { data: comment, error: fetchError } = await supabase
         .from('comments')
@@ -307,7 +351,21 @@ export const forumService = {
         .delete()
         .eq('id', commentId);
       
-      if (deleteError) throw deleteError;
+      if (deleteError) {
+        // Try once more with fresh headers if we have an auth issue
+        if (deleteError.code === '42501' || deleteError.code === '401') {
+          await authService.refreshAuthenticationStatus();
+          
+          const { error: retryError } = await supabase
+            .from('comments')
+            .delete()
+            .eq('id', commentId);
+            
+          if (retryError) throw retryError;
+        } else {
+          throw deleteError;
+        }
+      }
       
       return true;
     } catch (error) {
@@ -316,7 +374,7 @@ export const forumService = {
     }
   },
   
-  // Add this method to the forumService object
+  // Update a post (e.g., toggle pin status)
   async updatePost(postId: string | number, updates: { [key: string]: any }) {
     // Check if user is authenticated
     const user = await authService.getCurrentUser();
@@ -325,6 +383,8 @@ export const forumService = {
     }
     
     try {
+      const supabase = authService.getClient();
+      
       // First check if user is the author or an admin
       const { data: post, error: fetchError } = await supabase
         .from('posts')
@@ -342,9 +402,15 @@ export const forumService = {
         .single();
       
       const isAdmin = roleData?.role === 'admin';
+      const isModerator = roleData?.role === 'moderator';
       const isAuthor = post.user_id === user.id;
       
-      if (!isAdmin && !isAuthor) {
+      // Different permissions for different update types
+      if (updates.is_pinned !== undefined && !isAdmin && !isModerator) {
+        throw new Error('Only admins and moderators can pin/unpin posts');
+      }
+      
+      if (!isAdmin && !isModerator && !isAuthor) {
         throw new Error('Not authorized to update this post');
       }
       
@@ -355,11 +421,47 @@ export const forumService = {
         .eq('id', postId)
         .select();
       
-      if (error) throw error;
+      if (error) {
+        // Try once more with fresh headers if we have an auth issue
+        if (error.code === '42501' || error.code === '401') {
+          await authService.refreshAuthenticationStatus();
+          
+          const { data: retryData, error: retryError } = await supabase
+            .from('posts')
+            .update(updates)
+            .eq('id', postId)
+            .select();
+            
+          if (retryError) throw retryError;
+          return retryData;
+        }
+        
+        throw error;
+      }
+      
       return data;
     } catch (error) {
       console.error('Error updating post:', error);
       throw error;
+    }
+  },
+  
+  // Debug authentication
+  async debugAuth() {
+    try {
+      const supabase = authService.getClient();
+      const { data, error } = await supabase.rpc('debug_auth');
+      
+      if (error) {
+        console.error("Error debugging auth:", error);
+        return null;
+      }
+      
+      console.log("Authentication Debug:", data);
+      return data;
+    } catch (error) {
+      console.error("Error debugging auth:", error);
+      return null;
     }
   }
 };
