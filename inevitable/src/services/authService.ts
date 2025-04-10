@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { ethers } from 'ethers'; // You'll need to install this package
+import { ethers } from 'ethers'; 
 
 interface User {
   id: string;
@@ -59,7 +59,7 @@ export const authService = {
   verifySignature(address: string, signature: string, message: string): boolean {
     try {
       // Recover the address from the signature
-      const recoveredAddress = ethers.verifyMessage(message, signature);
+      const recoveredAddress = ethers.utils.verifyMessage(message, signature);
       
       // Check if the recovered address matches the provided address
       return recoveredAddress.toLowerCase() === address.toLowerCase();
@@ -72,7 +72,7 @@ export const authService = {
   // Generate a verification token from a signature
   generateVerificationToken(signature: string): string {
     // Create a hash of the signature to use as a verification token
-    return ethers.keccak256(ethers.toUtf8Bytes(signature)).substring(2);
+    return ethers.utils.keccak256(ethers.utils.toUtf8Bytes(signature)).substring(2);
   },
   
   // Authenticate with wallet and signature
